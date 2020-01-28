@@ -13,21 +13,23 @@ table_names = {}
 
 def encode_target(data):
     df_mod = data.copy()
-    map_to_int = {}
     for key in table_names.keys():
-        targets = table_names[key]
-        map_to_int[key] = {name: (n+1) for n, name in enumerate(targets)}
-        df_mod.replace(map_to_int[key], inplace=True)
+        targets = sorted(df_mod[key].unique())
+        map_to_int = {name: n + 1 for n, name in enumerate(targets)}
+        df_mod[key].replace(map_to_int, inplace=True)
     return df_mod
 
 
 # build decision tree using training data, use pandas
 def decision_tree_build(data):
     encoded_data = encode_target(data=data)
-
-    print(encoded_data.head(n=6))
+    features = list(encoded_data.columns[:-1])
+    target_y = list(encoded_data.columns[-1])
+    x = encoded_data[features]
+    y = encoded_data[target_y]
     clf = DecisionTreeClassifier(criterion="entropy", splitter="best")
-    return 1
+    clf.fit(x, y)
+    return clf
 
 
 def plot_tree():
@@ -83,6 +85,12 @@ def read_data(directory=""):
     return train, valid, test
 
 
+def clean_temp_files():
+    logging.info(msg="Deleting temporary files")
+    for x in temp_files:
+        os.remove(x)
+
+
 def main():
     logging.basicConfig(level=logging.DEBUG)
     train, valid, test = read_data()
@@ -92,12 +100,6 @@ def main():
     logging.info("\n" + str(train.head(n=5)))
     tree = decision_tree_build(train)
     clean_temp_files()
-
-
-def clean_temp_files():
-    logging.info(msg="Deleting temporary files")
-    for x in temp_files:
-        os.remove(x)
 
 
 if __name__ == "__main__":
